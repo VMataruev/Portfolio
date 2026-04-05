@@ -32,3 +32,66 @@ header a {
 .a_box:hover .a_box_line {
     transform: scaleX(1);
 }
+
+
+.projects_box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-top: 200px;
+    gap: 200px;
+}
+
+.project_box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.project_box h1 {
+    font-size: 100px;
+    color: var(--brand-main);
+}
+
+.project_box h2 {
+    font-size: 20px;
+}
+
+.project_box h3 {
+    font-size: 20px;
+    color: var(--text-gray);
+    margin-bottom: 20px;
+}
+
+.project_box img {
+    border-radius: 8px;
+    box-shadow: 0px 10px 10px 10px rgba(0, 0, 0, 0.342);
+}
+
+.main-img {
+    max-width: 1000px;
+}
+
+
+.proj_features {
+    padding: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(800px, 1fr));
+    gap: 100px;
+    align-items: stretch; /* важно */
+    max-width: 1836px;
+}
+
+.proj_features img {
+    max-width: 800px;
+}
+
+.feature_box h1 {
+    color: var(--text-white);
+}
+
+.feature_box h2 {
+    margin-bottom: 20px;
+}

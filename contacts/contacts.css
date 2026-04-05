@@ -32,3 +32,30 @@ header a {
 .a_box:hover .a_box_line {
     transform: scaleX(1);
 }
+
+
+.contacts-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 40px;
+}
+
+.contact-box {
+    display: flex;
+    flex-direction: column;
+    font-size: 30px;
+}
+
+.contact-box h1 {
+    color: var(--brand-main);
+}
+
+.contact-box img {
+    max-width: 500px;
+}
