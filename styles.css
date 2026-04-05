@@ -1,0 +1,275 @@
+@import url('https://fonts.googleapis.com/css2?family=Cascadia+Code:ital,wght@0,200..700;1,200..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Lexend:wght@100..900&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&family=Sansation:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Sansation", sans-serif;
+    color: var(--text-white);
+}
+
+:root {
+    --brand-main: rgb(255, 253, 146);
+    --text-white: white;
+    --text-gray: rgb(180, 180, 180);
+}
+
+
+body {
+    background-color: #0d0d0d;
+    overflow-x: hidden;
+}
+
+.brand-main {
+    color: var(--brand-main);
+}
+
+.no_text_decoration {
+    text-decoration: none;
+}
+
+.hero-bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  background: radial-gradient(circle at center, #1a1a1a 0%, #0b0b0b 100%);
+}
+
+.wrapper_main {
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    width: 100svw;
+}
+
+.photo_box {
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    pointer-events: none;
+    /* background-color: rgb(168, 168, 168); */
+}
+
+.img_box {
+    z-index: 10;
+}
+
+.img_box img {
+    width: 50svw;
+}
+
+.circle_box {
+    position: absolute;
+    top: 0px;
+    z-index: -1;
+}
+
+.circle {
+    width: 600px;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    background-color: var(--brand-main);
+}
+
+.blur {
+    position: absolute;
+    top: 0;
+    filter: blur(50px);
+}
+
+
+
+
+
+header {
+    /* background-color: red; */
+    position: absolute;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    font-size: 40px;
+    padding: 40px;
+    z-index: 999;
+    /* backdrop-filter: blur(999px); */
+}
+
+header a {
+    color: var(--text-white);
+    text-decoration: none;
+    transition: .5s;
+}
+
+
+
+.a_box_line {
+    background-color: var(--brand-main);
+    height: 4px;
+    border-radius: 4px;
+
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: center; /* ключевое */
+    transition: transform 0.4s ease;
+}
+
+.a_box:hover .a_box_line {
+    transform: scaleX(1);
+}
+
+/* header a:hover {
+    scale: 1.2;
+    transition: .5s;
+} */
+
+
+.info_box_all {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 80px;
+    margin: auto 0 auto 0;
+}
+
+.info_box {
+    max-width: 400px;
+    font-size: 30px;
+}
+
+.developer_info {
+    margin-top: 40px;
+}
+
+.name_box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+}
+
+.name_line {
+    background-color: var(--brand-main);
+    width: 100%;
+    height: 4px;
+}
+
+.contact_box {
+    border: 1px solid var(--brand-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px;
+    color: var(--text-gray);
+    margin-top: 40px;
+    border-radius: 5px 5px 20px 5px;
+    cursor: pointer;
+    transition: .5s;
+}
+
+.contact_box:hover {
+    color: black;
+    transition: .5s;
+    background-color: var(--brand-main);
+}
+
+
+
+.more_about_me {
+    display: flex;
+    color: var(--brand-main);
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 40px;
+}
+
+.devider {
+    width: 2px;
+    height: 20px;
+    background-color: var(--brand-main);
+}
+
+.about_me_btn {
+    transition: .5s;
+}
+
+.about_me_btn:hover {
+    scale: 1.1;
+    transition: .5s;
+}
+
+
+
+.stars {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.star {
+    position: absolute;
+    border-radius: 999px;
+    background: var(--brand-main);
+    opacity: 0.2;
+    animation: twinkle 3s infinite ease-in-out;
+}
+
+@keyframes twinkle {
+    0% {
+        opacity: 0.1;
+        transform: scale(0.8);
+    }
+    25% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.2;
+        transform: scale(0.7);
+    }
+    100% {
+        opacity: 0.1;
+        transform: scale(0.8);
+    }
+}
+
+
+
+
+@media (max-width: 1600px) {
+    .circle {
+        width: 500px;
+    }
+}
+
+@media (max-width: 1400px) {
+    .info_box_all {
+        flex-direction: column;
+        justify-content: start;
+        align-items: start;
+        margin: 0 auto 0 auto;
+        gap: 40px;
+    }
+
+    .photo_box {
+        position: relative;
+        margin-top: 120px;
+    }
+
+    .circle {
+        width: 30svw;
+    }
+}
+
+@media (max-width: 1200px) {
+    .a_box a {
+        font-size: 24px;
+    }
+}
+
