@@ -37,13 +37,13 @@ header a {
 .contacts-box {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     position: absolute;
     top: 0;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
     gap: 40px;
+    margin-top: 200px;
 }
 
 .contact-box {
@@ -56,6 +56,9 @@ header a {
     color: var(--brand-main);
 }
 
-.contact-box img {
+.img-box {
     max-width: 500px;
+}
+.contact-box img {
+    width: 100%;
 }

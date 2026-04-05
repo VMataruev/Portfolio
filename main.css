@@ -10,6 +10,7 @@
 
 :root {
     --brand-main: rgb(255, 253, 146);
+    /* --brand-main: rgb(233, 252, 61); */
     --text-white: white;
     --text-gray: rgb(180, 180, 180);
 }
