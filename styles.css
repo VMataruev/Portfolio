@@ -149,6 +149,7 @@ header a {
     border-radius: 5px 5px 20px 5px;
     cursor: pointer;
     transition: .5s;
+    text-decoration: none;
 }
 
 .contact_box:hover {
