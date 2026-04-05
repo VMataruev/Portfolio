@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Cascadia+Code:ital,wght@0,200..700;1,200..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Lexend:wght@100..900&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&family=Sansation:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Sansation", sans-serif;
+    color: var(--text-white);
+}
+
+:root {
+    --brand-main: rgb(255, 253, 146);
+    --text-white: white;
+    --text-gray: rgb(180, 180, 180);
+}
+
+
+body {
+    background-color: #0d0d0d;
+    overflow-x: hidden;
+}
+
+.hero-bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  background: radial-gradient(circle at center, #1a1a1a 0%, #0b0b0b 100%);
+}
+
+.stars {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.star {
+    position: absolute;
+    border-radius: 999px;
+    background: var(--brand-main);
+    opacity: 0.2;
+    animation: twinkle 3s infinite ease-in-out;
+}
+
+@keyframes twinkle {
+    0% {
+        opacity: 0.1;
+        transform: scale(0.8);
+    }
+    25% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.2;
+        transform: scale(0.7);
+    }
+    100% {
+        opacity: 0.1;
+        transform: scale(0.8);
+    }
+}
