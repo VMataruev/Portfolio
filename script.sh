@@ -46,10 +46,35 @@ echo "Создание веб-страниц..."
 # исходные
 cat <<EOF | sudo tee $BASE_DIR/original.html
 <html>
-<head><title>Original Images</title></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Портфолио - Исходные изображения</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./main.css">
+</head>
 <body>
-<h1>Исходные изображения</h1>
-EOF
+    <div class="hero-bg">
+        <div class="stars"></div>
+    </div>
+
+    <header>
+        <div class="a_box">
+            <a href="../index.html">Обо мне</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="../projects/projects.html">Проекты</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="">Контакты</a>
+            <div class="a_box_line"></div>
+        </div>
+    </header>
+</body>
+<script src="./stars.js"></script>
+</html>
 
 for img in $IN_DIR/*.jpg; do
     file=$(basename "$img")
@@ -65,8 +90,8 @@ cat <<EOF | sudo tee $BASE_DIR/processed.html
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Портфолио - Обработанные изображения</title>
-    <link rel="stylesheet" href="contacts.css">
-    <link rel="stylesheet" href="../main.css">
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./main.css">
 </head>
 <body>
     <div class="hero-bg">
