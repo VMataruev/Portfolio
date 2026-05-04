@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # === ПЕРЕМЕННЫЕ ===
-SRC_DIR="$BASE_DIR/imgs_1"
-IN_DIR="$BASE_DIR/foto_in"
-OUT_DIR="$BASE_DIR/foto_www"
-ARCH_DIR="$BASE_DIR/arhiv/foto"
-BASE_DIR="$(pwd)"
+SRC_DIR="/var/www/portfolio.net/imgs_1"
+IN_DIR="/var/www/portfolio.net/foto_in"
+OUT_DIR="/var/www/portfolio.net/foto_www"
+ARCH_DIR="/var/www/portfolio.net/arhiv/foto"
+BASE_DIR="/var/www/portfolio.net"
 
 # === СОЗДАНИЕ КАТАЛОГОВ ===
 echo "Создание каталогов..."
