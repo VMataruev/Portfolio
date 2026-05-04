@@ -23,8 +23,3 @@ function animate() {
 }
 
 animate();
-
-
-
-
-
