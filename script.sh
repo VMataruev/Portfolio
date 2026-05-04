@@ -6,6 +6,13 @@ IN_DIR="/var/www/portfolio.net/foto_in"
 OUT_DIR="/var/www/portfolio.net/foto_www"
 ARCH_DIR="/var/www/portfolio.net/arhiv/foto"
 BASE_DIR="/var/www/portfolio.net"
+LOG_FILE="/var/www/portfolio.net/process.log"
+
+
+# === ОЧИСТКА ФАЙЛА ЛОГОВ ===
+echo "=== ЛОГ ОБРАБОТКИ ===" > "$LOG_FILE"
+echo "Дата: $(date)" >> "$LOG_FILE"
+echo "" >> "$LOG_FILE"
 
 # === СОЗДАНИЕ КАТАЛОГОВ ===
 echo "Создание каталогов..."
@@ -27,11 +34,30 @@ echo "Обработка изображений..."
 
 for img in $IN_DIR/*.jpg; do
     filename=$(basename "$img")
-    
-    # пример обработки: уменьшение + watermark
-    convert "$img" -resize 800x600 -gravity South \
-    -pointsize 20 -annotate +0+10 "Processed" \
-    "$OUT_DIR/$filename"
+    output="$OUT_DIR/$filename"
+
+    # размер ДО
+    size_before=$(stat -c%s "$img")
+
+    # обработка
+    convert "$img" -resize 800x600 -quality 85 \
+    -gravity South -pointsize 20 -annotate +0+10 "Processed" \
+    "$output"
+
+    # размер ПОСЛЕ
+    size_after=$(stat -c%s "$output")
+
+    # расчёт сжатия
+    diff=$((size_before - size_after))
+    percent=$(awk "BEGIN {printf \"%.2f\", ($diff/$size_before)*100}")
+
+    # запись в лог
+    echo "Файл: $filename" >> "$LOG_FILE"
+    echo "Исходный размер: $size_before байт" >> "$LOG_FILE"
+    echo "Новый размер: $size_after байт" >> "$LOG_FILE"
+    echo "Сжатие: $percent %" >> "$LOG_FILE"
+    echo "Сохранён: $output" >> "$LOG_FILE"
+    echo "-----------------------------" >> "$LOG_FILE"
 done
 
 # === АРХИВАЦИЯ ===
@@ -71,6 +97,16 @@ cat <<EOF | sudo tee $BASE_DIR/original.html
             <a href="">Контакты</a>
             <div class="a_box_line"></div>
         </div>
+
+        <div class="a_box">
+            <a href="./original.html">Оригиналы</a>
+            <div class="a_box_line"></div>
+        </div>
+
+        <div class="a_box">
+            <a href="./processed.html">Обработанные</a>
+            <div class="a_box_line"></div>
+        </div>
     </header>
 EOF
 
@@ -107,6 +143,16 @@ cat <<EOF | sudo tee $BASE_DIR/processed.html
         </div>
         <div class="a_box">
             <a href="">Контакты</a>
+            <div class="a_box_line"></div>
+        </div>
+
+        <div class="a_box">
+            <a href="./original.html">Оригиналы</a>
+            <div class="a_box_line"></div>
+        </div>
+
+        <div class="a_box">
+            <a href="./processed.html">Обработанные</a>
             <div class="a_box_line"></div>
         </div>
     </header>
