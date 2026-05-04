@@ -2,10 +2,10 @@
 
 # === ПЕРЕМЕННЫЕ ===
 SRC_DIR="$HOME/images"
-IN_DIR="/var/www/html/foto_in"
-OUT_DIR="/var/www/html/foto_www"
-ARCH_DIR="/var/www/html/arhiv/foto"
-BASE_DIR="/var/www/html"
+IN_DIR="/var/www/portfolio.net/foto_in"
+OUT_DIR="/var/www/portfolio/foto_www"
+ARCH_DIR="/var/www/portfolio/arhiv/foto"
+BASE_DIR="/var/www/portfolio"
 
 # === СОЗДАНИЕ КАТАЛОГОВ ===
 echo "Создание каталогов..."
