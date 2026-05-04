@@ -50,8 +50,8 @@ cat <<EOF | sudo tee $BASE_DIR/original.html
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Портфолио - Исходные изображения</title>
-    <link rel="stylesheet" href="./style.css">
-    <link rel="stylesheet" href="./main.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="main.css">
 </head>
 <body>
     <div class="hero-bg">
@@ -90,8 +90,8 @@ cat <<EOF | sudo tee $BASE_DIR/processed.html
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Портфолио - Обработанные изображения</title>
-    <link rel="stylesheet" href="./style.css">
-    <link rel="stylesheet" href="./main.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="main.css">
 </head>
 <body>
     <div class="hero-bg">
