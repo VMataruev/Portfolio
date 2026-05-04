@@ -72,16 +72,14 @@ cat <<EOF | sudo tee $BASE_DIR/original.html
             <div class="a_box_line"></div>
         </div>
     </header>
-</body>
-<script src="./stars.js"></script>
-</html>
+EOF
 
 for img in $IN_DIR/*.jpg; do
     file=$(basename "$img")
     echo "<img src='foto_in/$file' width='200'>" | sudo tee -a $BASE_DIR/original.html
 done
 
-echo "</body></html>" | sudo tee -a $BASE_DIR/original.html
+echo "</body><script src="./stars.js"></script></html>" | sudo tee -a $BASE_DIR/original.html
 
 # обработанные
 cat <<EOF | sudo tee $BASE_DIR/processed.html
@@ -112,15 +110,13 @@ cat <<EOF | sudo tee $BASE_DIR/processed.html
             <div class="a_box_line"></div>
         </div>
     </header>
-</body>
-<script src="./stars.js"></script>
-</html>
+EOF
 
 for img in $OUT_DIR/*.jpg; do
     file=$(basename "$img")
     echo "<img src='foto_www/$file' width='200'>" | sudo tee -a $BASE_DIR/processed.html
 done
 
-echo "</body></html>" | sudo tee -a $BASE_DIR/processed.html
+echo "</body><script src="./stars.js"></script></html>" | sudo tee -a $BASE_DIR/processed.html
 
 echo "Готово!"
