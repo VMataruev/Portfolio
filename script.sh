@@ -61,10 +61,35 @@ echo "</body></html>" | sudo tee -a $BASE_DIR/original.html
 # обработанные
 cat <<EOF | sudo tee $BASE_DIR/processed.html
 <html>
-<head><title>Processed Images</title></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Портфолио - Обработанные изображения</title>
+    <link rel="stylesheet" href="contacts.css">
+    <link rel="stylesheet" href="../main.css">
+</head>
 <body>
-<h1>Обработанные изображения</h1>
-EOF
+    <div class="hero-bg">
+        <div class="stars"></div>
+    </div>
+
+    <header>
+        <div class="a_box">
+            <a href="../index.html">Обо мне</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="../projects/projects.html">Проекты</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="">Контакты</a>
+            <div class="a_box_line"></div>
+        </div>
+    </header>
+</body>
+<script src="./stars.js"></script>
+</html>
 
 for img in $OUT_DIR/*.jpg; do
     file=$(basename "$img")
