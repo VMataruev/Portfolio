@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # === ПЕРЕМЕННЫЕ ===
-SRC_DIR="/var/www/html/video_source"          # внешний каталог с AVI файлами
-IN_DIR="/var/www/html/video_in"               # входные видео (копии исходников)
-OUT_DIR="/var/www/html/video"                 # обработанные видео (video_www)
-ARCH_DIR="/var/www/html/arhiv/video"          # архив исходников
-BASE_DIR="/var/www/html"                      # корень сайта
-LOG_FILE="/var/www/html/process_video.log"    # лог обработки
+SRC_DIR="/var/www/portfolio.net/video_source"          # внешний каталог с AVI файлами
+IN_DIR="/var/www/portfolio.net/video_in"               # входные видео (копии исходников)
+OUT_DIR="/var/www/portfolio.net/video"                 # обработанные видео (video_www)
+ARCH_DIR="/var/www/portfolio.net/arhiv/video"          # архив исходников
+BASE_DIR="/var/www/portfolio.net"                      # корень сайта
+LOG_FILE="/var/www/portfolio.net/process_video.log"    # лог обработки
 
 # === ОЧИСТКА ФАЙЛА ЛОГОВ ===
 echo "=== ЛОГ ОБРАБОТКИ ВИДЕО ===" > "$LOG_FILE"
