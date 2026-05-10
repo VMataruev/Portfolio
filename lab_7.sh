@@ -13,14 +13,14 @@ echo "=== LOG VIDEO PROCESSING ===" > "$LOG_FILE"
 echo "Date: $(date)" >> "$LOG_FILE"
 echo "" >> "$LOG_FILE"
 
-# === CREATE DIRECTORIES ===
+# === СОЗДАНИЕ КАТАЛОГОВ ===
 echo "Creating directories..."
 sudo mkdir -p $IN_DIR
 sudo mkdir -p $OUT_DIR
 sudo mkdir -p $ARCH_DIR
 sudo mkdir -p $BASE_DIR
 
-# === INSTALL PROGRAMS ===
+# === УСТАНОВКА ПРОГРАММ ===
 echo "Installing FFmpeg, HandBrakeCLI, archivers and web server..."
 sudo apt update
 sudo apt install -y ffmpeg handbrake-cli tar bzip2 apache2 wget
@@ -28,7 +28,7 @@ sudo apt install -y ffmpeg handbrake-cli tar bzip2 apache2 wget
 sudo systemctl start apache2
 sudo systemctl enable apache2
 
-# === COPY AVI FILES ===
+# === КОПИРОВАНИЕ AVI ФАЙЛОВ ===
 echo "Copying AVI files from $SRC_DIR to $IN_DIR..."
 
 if [ ! -d "$SRC_DIR" ]; then
@@ -54,8 +54,8 @@ for video in "$SRC_DIR"/*.avi; do
 done
 echo "Total copied files: $count" | tee -a "$LOG_FILE"
 
-# === VIDEO PROCESSING (AVI -> MP4) ===
-echo "Processing video (converting to MP4 with mono audio)..."
+# === ОБРАБОТКА ВИДЕО ===
+echo "Processing video..."
 
 for video in $IN_DIR/*.avi; do
     [ -f "$video" ] || continue
@@ -65,36 +65,451 @@ for video in $IN_DIR/*.avi; do
     output_hb="$OUT_DIR/${filename}_handbrake.mp4"
     
     size_before=$(stat -c%s "$video")
-    duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video" 2>/dev/null)
     
     echo "================================" >> "$LOG_FILE"
-    echo "Processing file: $filename.avi" >> "$LOG_FILE"
-    echo "Duration: ${duration} seconds" >> "$LOG_FILE"
+    echo "Processing: $filename.avi" >> "$LOG_FILE"
     
-    # FFmpeg conversion
-    echo "Converting via FFmpeg..." >> "$LOG_FILE"
-    start_time=$(date +%s)
-    
+    # FFmpeg
+    echo "FFmpeg conversion..." >> "$LOG_FILE"
     ffmpeg -i "$video" \
            -c:v libx264 -preset medium -crf 23 \
            -c:a aac -ac 1 -b:a 96k \
            -movflags +faststart \
            "$output_ff" -y 2>> "$LOG_FILE"
     
-    end_time=$(date +%s)
-    ff_time=$((end_time - start_time))
-    
     size_after_ff=$(stat -c%s "$output_ff" 2>/dev/null || echo "0")
+    echo "FFmpeg: $size_before -> $size_after_ff bytes" >> "$LOG_FILE"
     
-    if [ $size_before -gt 0 ]; then
-        diff_ff=$((size_before - size_after_ff))
-        percent_ff=$(awk "BEGIN {printf \"%.2f\", ($diff_ff/$size_before)*100}")
-    else
-        percent_ff="0"
+    # HandBrake
+    echo "HandBrake conversion..." >> "$LOG_FILE"
+    HandBrakeCLI -i "$video" -o "$output_hb" \
+                 --preset="Fast 1080p30" \
+                 --audio 1 --aencoder av_aac --mixdown mono \
+                 --verbose=0 2>> "$LOG_FILE"
+    
+    size_after_hb=$(stat -c%s "$output_hb" 2>/dev/null || echo "0")
+    echo "HandBrake: $size_before -> $size_after_hb bytes" >> "$LOG_FILE"
+    echo "-----------------------------" >> "$LOG_FILE"
+done
+
+# === АРХИВАЦИЯ ===
+echo "Archiving original AVI files..."
+
+ARCHIVE_NAME="video_original_$(date +%Y%m%d_%H%M%S).tar.bz2"
+sudo tar -cjf "$ARCH_DIR/$ARCHIVE_NAME" -C "$IN_DIR" .
+
+echo "Archive created: $ARCH_DIR/$ARCHIVE_NAME" >> "$LOG_FILE"
+
+# === СОЗДАНИЕ СТРАНИЦ ===
+echo "Creating web pages..."
+
+# СТРАНИЦА original.html
+sudo tee $BASE_DIR/original.html > /dev/null << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Портфолио - Исходные видео</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="main.css">
+    <style>
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 30px;
+            padding: 40px;
+            margin-top: 120px;
+        }
+        .video-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.1);
+        }
+        .video-card video {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .video-card h3 {
+            color: var(--brand-main);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .video-card p {
+            color: var(--text-gray);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-bg">
+        <div class="stars"></div>
+    </div>
+
+    <header>
+        <div class="a_box">
+            <a href="./index.html">Обо мне</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./projects/projects.html">Проекты</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./contacts/contacts.html">Контакты</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./original.html">Оригиналы</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./processed.html">Обработанные</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./comparison.html">Сравнение</a>
+            <div class="a_box_line"></div>
+        </div>
+    </header>
+
+    <h1 style="text-align: center; margin-top: 100px; color: var(--brand-main);">Исходные AVI видео</h1>
+    
+    <div class="video-grid">
+EOF
+
+# Добавляем видео на страницу original.html
+for video in $IN_DIR/*.avi; do
+    if [ -f "$video" ]; then
+        filename=$(basename "$video")
+        size=$(stat -c%s "$video")
+        size_mb=$(awk "BEGIN {printf \"%.2f\", $size/1048576}")
+        cat | sudo tee -a $BASE_DIR/original.html << EOF
+        <div class="video-card">
+            <video controls>
+                <source src="video_in/$filename" type="video/x-msvideo">
+            </video>
+            <h3>$filename</h3>
+            <p>Size: ${size_mb} MB</p>
+        </div>
+EOF
     fi
-    
-    echo "FFmpeg result:" >> "$LOG_FILE"
-    echo "  Original size: $size_before bytes" >> "$LOG_FILE"
-    echo "  New size: $size_after_ff bytes" >> "$LOG_FILE"
-    echo "  Compression: $percent_ff %" >> "$LOG_FILE"
-    echo 
+done
+
+sudo tee -a $BASE_DIR/original.html > /dev/null << 'EOF'
+    </div>
+    <script src="main.js"></script>
+    <script src="stars.js"></script>
+</body>
+</html>
+EOF
+
+# СТРАНИЦА processed.html
+sudo tee $BASE_DIR/processed.html > /dev/null << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Портфолио - Обработанные видео</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="main.css">
+    <style>
+        .method-section {
+            margin: 120px 40px 40px 40px;
+        }
+        .method-title {
+            color: var(--brand-main);
+            font-size: 28px;
+            margin-bottom: 30px;
+            padding-left: 20px;
+            border-left: 4px solid var(--brand-main);
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        .video-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.1);
+        }
+        .video-card video {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .video-card h3 {
+            color: var(--brand-main);
+            margin-bottom: 10px;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .video-card p {
+            color: var(--text-gray);
+            font-size: 14px;
+        }
+        .method-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .ffmpeg-badge {
+            background: rgba(255,107,107,0.3);
+            color: #ff6b6b;
+        }
+        .handbrake-badge {
+            background: rgba(78,205,196,0.3);
+            color: #4ecdc4;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-bg">
+        <div class="stars"></div>
+    </div>
+
+    <header>
+        <div class="a_box">
+            <a href="./index.html">Обо мне</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./projects/projects.html">Проекты</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./contacts/contacts.html">Контакты</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./original.html">Оригиналы</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./processed.html">Обработанные</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./comparison.html">Сравнение</a>
+            <div class="a_box_line"></div>
+        </div>
+    </header>
+
+    <div class="method-section">
+        <div class="method-title">FFmpeg</div>
+        <div class="video-grid">
+EOF
+
+# Добавляем FFmpeg видео
+for video in $OUT_DIR/*_ffmpeg.mp4; do
+    if [ -f "$video" ]; then
+        filename=$(basename "$video")
+        size=$(stat -c%s "$video")
+        size_mb=$(awk "BEGIN {printf \"%.2f\", $size/1048576}")
+        cat | sudo tee -a $BASE_DIR/processed.html << EOF
+            <div class="video-card">
+                <video controls>
+                    <source src="video/$filename" type="video/mp4">
+                </video>
+                <h3>$filename</h3>
+                <p>Size: ${size_mb} MB</p>
+                <div class="method-badge ffmpeg-badge">FFmpeg</div>
+            </div>
+EOF
+    fi
+done
+
+sudo tee -a $BASE_DIR/processed.html > /dev/null << 'EOF'
+        </div>
+    </div>
+
+    <div class="method-section">
+        <div class="method-title">HandBrake</div>
+        <div class="video-grid">
+EOF
+
+# Добавляем HandBrake видео
+for video in $OUT_DIR/*_handbrake.mp4; do
+    if [ -f "$video" ]; then
+        filename=$(basename "$video")
+        size=$(stat -c%s "$video")
+        size_mb=$(awk "BEGIN {printf \"%.2f\", $size/1048576}")
+        cat | sudo tee -a $BASE_DIR/processed.html << EOF
+            <div class="video-card">
+                <video controls>
+                    <source src="video/$filename" type="video/mp4">
+                </video>
+                <h3>$filename</h3>
+                <p>Size: ${size_mb} MB</p>
+                <div class="method-badge handbrake-badge">HandBrake</div>
+            </div>
+EOF
+    fi
+done
+
+sudo tee -a $BASE_DIR/processed.html > /dev/null << 'EOF'
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="stars.js"></script>
+</body>
+</html>
+EOF
+
+# СТРАНИЦА comparison.html
+sudo tee $BASE_DIR/comparison.html > /dev/null << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Портфолио - Сравнение</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="main.css">
+    <style>
+        .comparison-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            padding: 120px 40px 40px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .method-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 30px;
+        }
+        .method-card h2 {
+            color: var(--brand-main);
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .method-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .method-card li {
+            padding: 10px 0;
+            color: var(--text-gray);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .log-link {
+            text-align: center;
+            margin: 40px;
+        }
+        .log-link a {
+            color: var(--brand-main);
+            text-decoration: none;
+            background: rgba(255,255,255,0.1);
+            padding: 12px 24px;
+            border-radius: 30px;
+        }
+        .log-link a:hover {
+            background: var(--brand-main);
+            color: black;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 100px;
+            color: var(--brand-main);
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-bg">
+        <div class="stars"></div>
+    </div>
+
+    <header>
+        <div class="a_box">
+            <a href="./index.html">Обо мне</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./projects/projects.html">Проекты</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./contacts/contacts.html">Контакты</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./original.html">Оригиналы</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./processed.html">Обработанные</a>
+            <div class="a_box_line"></div>
+        </div>
+        <div class="a_box">
+            <a href="./comparison.html">Сравнение</a>
+            <div class="a_box_line"></div>
+        </div>
+    </header>
+
+    <h1>Сравнение FFmpeg и HandBrake</h1>
+
+    <div class="comparison-container">
+        <div class="method-card">
+            <h2>FFmpeg</h2>
+            <ul>
+                <li>Высокая скорость обработки</li>
+                <li>Гибкие настройки кодека</li>
+                <li>Меньше потребление ресурсов</li>
+                <li>Подходит для пакетной обработки</li>
+                <li>Хуже сжатие на низких битрейтах</li>
+            </ul>
+        </div>
+
+        <div class="method-card">
+            <h2>HandBrake</h2>
+            <ul>
+                <li>Отличное качество сжатия</li>
+                <li>Удобные готовые пресеты</li>
+                <li>Есть графический интерфейс</li>
+                <li>Медленнее FFmpeg</li>
+                <li>Больше потребляет CPU</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="log-link">
+        <a href="process_video.log">Лог обработки</a>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="stars.js"></script>
+</body>
+</html>
+EOF
+
+sudo chown -R www-data:www-data $BASE_DIR
+sudo chmod -R 755 $BASE_DIR
+
+echo "================================" | tee -a "$LOG_FILE"
+echo "DONE!" | tee -a "$LOG_FILE"
+echo "================================" | tee -a "$LOG_FILE"
+echo "Site available at: http://$(hostname -I | awk '{print $1}')/" | tee -a "$LOG_FILE"
+echo "Log file: $LOG_FILE" | tee -a "$LOG_FILE"
+echo "Archive: $ARCH_DIR" | tee -a "$LOG_FILE"
+echo "Processed files: $count" | tee -a "$LOG_FILE"
+echo "Results: $OUT_DIR" | tee -a "$LOG_FILE"
