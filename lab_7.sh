@@ -18,41 +18,30 @@ echo "Creating directories..."
 sudo mkdir -p $IN_DIR
 sudo mkdir -p $OUT_DIR
 sudo mkdir -p $ARCH_DIR
-sudo mkdir -p $BASE_DIR
 
 # === УСТАНОВКА ПРОГРАММ ===
-echo "Installing FFmpeg, HandBrakeCLI, archivers and web server..."
+echo "Installing programs..."
 sudo apt update
-sudo apt install -y ffmpeg handbrake-cli tar bzip2 apache2 wget
+sudo apt install -y ffmpeg handbrake-cli tar bzip2 apache2
 
 sudo systemctl start apache2
 sudo systemctl enable apache2
 
 # === КОПИРОВАНИЕ AVI ФАЙЛОВ ===
-echo "Copying AVI files from $SRC_DIR to $IN_DIR..."
+echo "Copying AVI files..."
 
 if [ ! -d "$SRC_DIR" ]; then
-    echo "WARNING: Directory $SRC_DIR not found!" | tee -a "$LOG_FILE"
-    echo "Creating test directory with demo file..." | tee -a "$LOG_FILE"
     mkdir -p "$SRC_DIR"
-    
-    ffmpeg -f lavfi -i testsrc=duration=5:size=320x240:rate=1 \
-           -c:v libx264 -preset ultrafast "$SRC_DIR/test1.avi" -y 2>/dev/null
-    ffmpeg -f lavfi -i testsrc=duration=7:size=320x240:rate=1 \
-           -c:v libx264 -preset ultrafast "$SRC_DIR/test2.avi" -y 2>/dev/null
-    echo "Created 2 test AVI files" >> "$LOG_FILE"
+    echo "Please put AVI files in $SRC_DIR" | tee -a "$LOG_FILE"
+    exit 1
 fi
 
-count=0
 for video in "$SRC_DIR"/*.avi; do
-    if [ -f "$video" ] && [ $count -lt 20 ]; then
+    if [ -f "$video" ]; then
         sudo cp "$video" "$IN_DIR/"
-        filename=$(basename "$video")
-        echo "Copied: $filename" >> "$LOG_FILE"
-        ((count++))
+        echo "Copied: $(basename "$video")" >> "$LOG_FILE"
     fi
 done
-echo "Total copied files: $count" | tee -a "$LOG_FILE"
 
 # === ОБРАБОТКА ВИДЕО ===
 echo "Processing video..."
@@ -61,148 +50,75 @@ for video in $IN_DIR/*.avi; do
     [ -f "$video" ] || continue
     
     filename=$(basename "$video" .avi)
-    output_ff="$OUT_DIR/${filename}_ffmpeg.mp4"
-    output_hb="$OUT_DIR/${filename}_handbrake.mp4"
     
-    size_before=$(stat -c%s "$video")
-    
-    echo "================================" >> "$LOG_FILE"
-    echo "Processing: $filename.avi" >> "$LOG_FILE"
+    echo "Processing: $filename" >> "$LOG_FILE"
     
     # FFmpeg
-    echo "FFmpeg conversion..." >> "$LOG_FILE"
     ffmpeg -i "$video" \
            -c:v libx264 -preset medium -crf 23 \
            -c:a aac -ac 1 -b:a 96k \
-           -movflags +faststart \
-           "$output_ff" -y 2>> "$LOG_FILE"
-    
-    size_after_ff=$(stat -c%s "$output_ff" 2>/dev/null || echo "0")
-    echo "FFmpeg: $size_before -> $size_after_ff bytes" >> "$LOG_FILE"
+           "$OUT_DIR/${filename}_ffmpeg.mp4" -y
     
     # HandBrake
-    echo "HandBrake conversion..." >> "$LOG_FILE"
-    HandBrakeCLI -i "$video" -o "$output_hb" \
+    HandBrakeCLI -i "$video" -o "$OUT_DIR/${filename}_handbrake.mp4" \
                  --preset="Fast 1080p30" \
-                 --audio 1 --aencoder av_aac --mixdown mono \
-                 --verbose=0 2>> "$LOG_FILE"
+                 --audio 1 --aencoder av_aac --mixdown mono
     
-    size_after_hb=$(stat -c%s "$output_hb" 2>/dev/null || echo "0")
-    echo "HandBrake: $size_before -> $size_after_hb bytes" >> "$LOG_FILE"
-    echo "-----------------------------" >> "$LOG_FILE"
+    echo "Done: $filename" >> "$LOG_FILE"
 done
 
 # === АРХИВАЦИЯ ===
-echo "Archiving original AVI files..."
+echo "Archiving..."
 
 ARCHIVE_NAME="video_original_$(date +%Y%m%d_%H%M%S).tar.bz2"
 sudo tar -cjf "$ARCH_DIR/$ARCHIVE_NAME" -C "$IN_DIR" .
 
-echo "Archive created: $ARCH_DIR/$ARCHIVE_NAME" >> "$LOG_FILE"
-
 # === СОЗДАНИЕ СТРАНИЦ ===
-echo "Creating web pages..."
 
-# СТРАНИЦА original.html
-sudo tee $BASE_DIR/original.html > /dev/null << 'EOF'
+# original.html
+cat > $BASE_DIR/original.html << 'EOF'
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Портфолио - Исходные видео</title>
+    <title>Исходные видео</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="main.css">
-    <style>
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 30px;
-            padding: 40px;
-            margin-top: 120px;
-        }
-        .video-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 20px;
-            transition: transform 0.3s ease;
-        }
-        .video-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255,255,255,0.1);
-        }
-        .video-card video {
-            width: 100%;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-        .video-card h3 {
-            color: var(--brand-main);
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        .video-card p {
-            color: var(--text-gray);
-            font-size: 14px;
-        }
-    </style>
 </head>
 <body>
-    <div class="hero-bg">
-        <div class="stars"></div>
-    </div>
-
+    <div class="hero-bg"><div class="stars"></div></div>
+    
     <header>
-        <div class="a_box">
-            <a href="./index.html">Обо мне</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./projects/projects.html">Проекты</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./contacts/contacts.html">Контакты</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./original.html">Оригиналы</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./processed.html">Обработанные</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./comparison.html">Сравнение</a>
-            <div class="a_box_line"></div>
-        </div>
+        <div class="a_box"><a href="./index.html">Обо мне</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./projects/projects.html">Проекты</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./contacts/contacts.html">Контакты</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./original.html">Оригиналы</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./processed.html">Обработанные</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./comparison.html">Сравнение</a><div class="a_box_line"></div></div>
     </header>
 
-    <h1 style="text-align: center; margin-top: 100px; color: var(--brand-main);">Исходные AVI видео</h1>
-    
-    <div class="video-grid">
+    <h1 style="text-align:center; margin-top:100px; color:var(--brand-main);">Исходные AVI</h1>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:30px; padding:40px; margin-top:120px;">
 EOF
 
-# Добавляем видео на страницу original.html
 for video in $IN_DIR/*.avi; do
     if [ -f "$video" ]; then
         filename=$(basename "$video")
         size=$(stat -c%s "$video")
         size_mb=$(awk "BEGIN {printf \"%.2f\", $size/1048576}")
-        cat | sudo tee -a $BASE_DIR/original.html << EOF
-        <div class="video-card">
-            <video controls>
+        cat >> $BASE_DIR/original.html << EOF
+        <div style="background:rgba(255,255,255,0.05); border-radius:15px; padding:20px;">
+            <video controls style="width:100%; border-radius:10px;">
                 <source src="video_in/$filename" type="video/x-msvideo">
             </video>
-            <h3>$filename</h3>
-            <p>Size: ${size_mb} MB</p>
+            <h3 style="color:var(--brand-main);">$filename</h3>
+            <p style="color:var(--text-gray);">Size: ${size_mb} MB</p>
         </div>
 EOF
     fi
 done
 
-sudo tee -a $BASE_DIR/original.html > /dev/null << 'EOF'
+cat >> $BASE_DIR/original.html << 'EOF'
     </div>
     <script src="main.js"></script>
     <script src="stars.js"></script>
@@ -210,289 +126,151 @@ sudo tee -a $BASE_DIR/original.html > /dev/null << 'EOF'
 </html>
 EOF
 
-# СТРАНИЦА processed.html
-sudo tee $BASE_DIR/processed.html > /dev/null << 'EOF'
+# processed.html
+cat > $BASE_DIR/processed.html << 'EOF'
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Портфолио - Обработанные видео</title>
+    <title>Обработанные видео</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="main.css">
     <style>
-        .method-section {
-            margin: 120px 40px 40px 40px;
-        }
-        .method-title {
-            color: var(--brand-main);
-            font-size: 28px;
-            margin-bottom: 30px;
-            padding-left: 20px;
-            border-left: 4px solid var(--brand-main);
-        }
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 30px;
-            margin-bottom: 60px;
-        }
-        .video-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 20px;
-            transition: transform 0.3s ease;
-        }
-        .video-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255,255,255,0.1);
-        }
-        .video-card video {
-            width: 100%;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-        .video-card h3 {
-            color: var(--brand-main);
-            margin-bottom: 10px;
-            font-size: 14px;
-            word-break: break-all;
-        }
-        .video-card p {
-            color: var(--text-gray);
-            font-size: 14px;
-        }
-        .method-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-top: 10px;
-        }
-        .ffmpeg-badge {
-            background: rgba(255,107,107,0.3);
-            color: #ff6b6b;
-        }
-        .handbrake-badge {
-            background: rgba(78,205,196,0.3);
-            color: #4ecdc4;
-        }
+        .section { margin: 120px 40px 40px 40px; }
+        .title { color: var(--brand-main); font-size: 28px; margin-bottom: 30px; border-left: 4px solid var(--brand-main); padding-left: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 30px; margin-bottom: 60px; }
+        .card { background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; }
+        .card video { width: 100%; border-radius: 10px; margin-bottom: 15px; }
+        .card h3 { color: var(--brand-main); font-size: 14px; }
+        .card p { color: var(--text-gray); font-size: 14px; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; margin-top: 10px; }
+        .ff { background: rgba(255,107,107,0.3); color: #ff6b6b; }
+        .hb { background: rgba(78,205,196,0.3); color: #4ecdc4; }
     </style>
 </head>
 <body>
-    <div class="hero-bg">
-        <div class="stars"></div>
-    </div>
-
+    <div class="hero-bg"><div class="stars"></div></div>
+    
     <header>
-        <div class="a_box">
-            <a href="./index.html">Обо мне</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./projects/projects.html">Проекты</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./contacts/contacts.html">Контакты</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./original.html">Оригиналы</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./processed.html">Обработанные</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./comparison.html">Сравнение</a>
-            <div class="a_box_line"></div>
-        </div>
+        <div class="a_box"><a href="./index.html">Обо мне</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./projects/projects.html">Проекты</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./contacts/contacts.html">Контакты</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./original.html">Оригиналы</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./processed.html">Обработанные</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./comparison.html">Сравнение</a><div class="a_box_line"></div></div>
     </header>
 
-    <div class="method-section">
-        <div class="method-title">FFmpeg</div>
-        <div class="video-grid">
+    <div class="section">
+        <div class="title">FFmpeg</div>
+        <div class="grid">
 EOF
 
-# Добавляем FFmpeg видео
 for video in $OUT_DIR/*_ffmpeg.mp4; do
     if [ -f "$video" ]; then
         filename=$(basename "$video")
         size=$(stat -c%s "$video")
         size_mb=$(awk "BEGIN {printf \"%.2f\", $size/1048576}")
-        cat | sudo tee -a $BASE_DIR/processed.html << EOF
-            <div class="video-card">
-                <video controls>
-                    <source src="video/$filename" type="video/mp4">
-                </video>
+        cat >> $BASE_DIR/processed.html << EOF
+            <div class="card">
+                <video controls><source src="video/$filename" type="video/mp4"></video>
                 <h3>$filename</h3>
                 <p>Size: ${size_mb} MB</p>
-                <div class="method-badge ffmpeg-badge">FFmpeg</div>
+                <div class="badge ff">FFmpeg</div>
             </div>
 EOF
     fi
 done
 
-sudo tee -a $BASE_DIR/processed.html > /dev/null << 'EOF'
+cat >> $BASE_DIR/processed.html << 'EOF'
         </div>
     </div>
 
-    <div class="method-section">
-        <div class="method-title">HandBrake</div>
-        <div class="video-grid">
+    <div class="section">
+        <div class="title">HandBrake</div>
+        <div class="grid">
 EOF
 
-# Добавляем HandBrake видео
 for video in $OUT_DIR/*_handbrake.mp4; do
     if [ -f "$video" ]; then
         filename=$(basename "$video")
         size=$(stat -c%s "$video")
         size_mb=$(awk "BEGIN {printf \"%.2f\", $size/1048576}")
-        cat | sudo tee -a $BASE_DIR/processed.html << EOF
-            <div class="video-card">
-                <video controls>
-                    <source src="video/$filename" type="video/mp4">
-                </video>
+        cat >> $BASE_DIR/processed.html << EOF
+            <div class="card">
+                <video controls><source src="video/$filename" type="video/mp4"></video>
                 <h3>$filename</h3>
                 <p>Size: ${size_mb} MB</p>
-                <div class="method-badge handbrake-badge">HandBrake</div>
+                <div class="badge hb">HandBrake</div>
             </div>
 EOF
     fi
 done
 
-sudo tee -a $BASE_DIR/processed.html > /dev/null << 'EOF'
+cat >> $BASE_DIR/processed.html << 'EOF'
         </div>
     </div>
-
     <script src="main.js"></script>
     <script src="stars.js"></script>
 </body>
 </html>
 EOF
 
-# СТРАНИЦА comparison.html
-sudo tee $BASE_DIR/comparison.html > /dev/null << 'EOF'
+# comparison.html
+cat > $BASE_DIR/comparison.html << 'EOF'
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Портфолио - Сравнение</title>
+    <title>Сравнение</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="main.css">
     <style>
-        .comparison-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 40px;
-            padding: 120px 40px 40px 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .method-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px;
-            padding: 30px;
-        }
-        .method-card h2 {
-            color: var(--brand-main);
-            font-size: 28px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .method-card ul {
-            list-style: none;
-            padding: 0;
-        }
-        .method-card li {
-            padding: 10px 0;
-            color: var(--text-gray);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .log-link {
-            text-align: center;
-            margin: 40px;
-        }
-        .log-link a {
-            color: var(--brand-main);
-            text-decoration: none;
-            background: rgba(255,255,255,0.1);
-            padding: 12px 24px;
-            border-radius: 30px;
-        }
-        .log-link a:hover {
-            background: var(--brand-main);
-            color: black;
-        }
-        h1 {
-            text-align: center;
-            margin-top: 100px;
-            color: var(--brand-main);
-        }
+        .container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; padding: 120px 40px 40px 40px; max-width: 1200px; margin: 0 auto; }
+        .card { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 30px; }
+        .card h2 { color: var(--brand-main); text-align: center; margin-bottom: 20px; }
+        .card ul { list-style: none; padding: 0; }
+        .card li { padding: 10px 0; color: var(--text-gray); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .log { text-align: center; margin: 40px; }
+        .log a { color: var(--brand-main); background: rgba(255,255,255,0.1); padding: 12px 24px; border-radius: 30px; text-decoration: none; }
+        h1 { text-align: center; margin-top: 100px; color: var(--brand-main); }
     </style>
 </head>
 <body>
-    <div class="hero-bg">
-        <div class="stars"></div>
-    </div>
-
+    <div class="hero-bg"><div class="stars"></div></div>
+    
     <header>
-        <div class="a_box">
-            <a href="./index.html">Обо мне</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./projects/projects.html">Проекты</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./contacts/contacts.html">Контакты</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./original.html">Оригиналы</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./processed.html">Обработанные</a>
-            <div class="a_box_line"></div>
-        </div>
-        <div class="a_box">
-            <a href="./comparison.html">Сравнение</a>
-            <div class="a_box_line"></div>
-        </div>
+        <div class="a_box"><a href="./index.html">Обо мне</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./projects/projects.html">Проекты</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./contacts/contacts.html">Контакты</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./original.html">Оригиналы</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./processed.html">Обработанные</a><div class="a_box_line"></div></div>
+        <div class="a_box"><a href="./comparison.html">Сравнение</a><div class="a_box_line"></div></div>
     </header>
 
     <h1>Сравнение FFmpeg и HandBrake</h1>
 
-    <div class="comparison-container">
-        <div class="method-card">
+    <div class="container">
+        <div class="card">
             <h2>FFmpeg</h2>
             <ul>
-                <li>Высокая скорость обработки</li>
-                <li>Гибкие настройки кодека</li>
-                <li>Меньше потребление ресурсов</li>
-                <li>Подходит для пакетной обработки</li>
-                <li>Хуже сжатие на низких битрейтах</li>
+                <li>Высокая скорость</li>
+                <li>Гибкие настройки</li>
+                <li>Меньше ресурсов</li>
+                <li>Хуже сжатие</li>
             </ul>
         </div>
-
-        <div class="method-card">
+        <div class="card">
             <h2>HandBrake</h2>
             <ul>
-                <li>Отличное качество сжатия</li>
-                <li>Удобные готовые пресеты</li>
-                <li>Есть графический интерфейс</li>
-                <li>Медленнее FFmpeg</li>
-                <li>Больше потребляет CPU</li>
+                <li>Лучшее качество</li>
+                <li>Готовые пресеты</li>
+                <li>Есть GUI</li>
+                <li>Медленнее</li>
             </ul>
         </div>
     </div>
 
-    <div class="log-link">
+    <div class="log">
         <a href="process_video.log">Лог обработки</a>
     </div>
 
@@ -505,11 +283,5 @@ EOF
 sudo chown -R www-data:www-data $BASE_DIR
 sudo chmod -R 755 $BASE_DIR
 
-echo "================================" | tee -a "$LOG_FILE"
-echo "DONE!" | tee -a "$LOG_FILE"
-echo "================================" | tee -a "$LOG_FILE"
-echo "Site available at: http://$(hostname -I | awk '{print $1}')/" | tee -a "$LOG_FILE"
-echo "Log file: $LOG_FILE" | tee -a "$LOG_FILE"
-echo "Archive: $ARCH_DIR" | tee -a "$LOG_FILE"
-echo "Processed files: $count" | tee -a "$LOG_FILE"
-echo "Results: $OUT_DIR" | tee -a "$LOG_FILE"
+echo "Done!"
+echo "Site: http://$(hostname -I | awk '{print $1}')/"
