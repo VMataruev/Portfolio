@@ -32,7 +32,7 @@ echo "Copying AVI files..."
 
 if [ ! -d "$SRC_DIR" ]; then
     mkdir -p "$SRC_DIR"
-    echo "Please put AVI files in $SRC_DIR" | tee -a "$LOG_FILE"
+    echo "Put AVI files in $SRC_DIR" | tee -a "$LOG_FILE"
     exit 1
 fi
 
