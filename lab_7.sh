@@ -163,87 +163,226 @@ sudo tar -cjf "$ARCH_DIR/$ARCHIVE_NAME" -C "$IN_DIR" .
 echo "Архив создан: $ARCH_DIR/$ARCHIVE_NAME" >> "$LOG_FILE"
 echo "Размер архива: $(stat -c%s "$ARCH_DIR/$ARCHIVE_NAME" 2>/dev/null || echo "0") байт" >> "$LOG_FILE"
 
-# === СОЗДАНИЕ ПРОСТЫХ ВЕБ-СТРАНИЦ ===
+# === СОЗДАНИЕ ВЕБ-СТРАНИЦ В СТИЛЕ ПОРТФОЛИО ===
 echo "Создание веб-страниц..."
 
 # Устанавливаем права
 sudo chown -R www-data:www-data $BASE_DIR
 sudo chmod -R 755 $BASE_DIR
 
-# === ПРОСТАЯ ГЛАВНАЯ СТРАНИЦА ===
-cat <<EOF | sudo tee $BASE_DIR/index.html
-<html>
+# === СТРАНИЦА С ИСХОДНЫМИ ВИДЕО (original.html) ===
+cat <<'EOF' | sudo tee $BASE_DIR/original.html
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Лабораторная работа №7 - Обработка видео</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Портфолио - Исходные видео</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="main.css">
+    <style>
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 30px;
+            padding: 40px;
+            margin-top: 120px;
+        }
+        .video-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.1);
+        }
+        .video-card video {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .video-card h3 {
+            color: var(--brand-main);
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        .video-card p {
+            color: var(--text-gray);
+            font-size: 14px;
+        }
+        .size-badge {
+            display: inline-block;
+            background: rgba(255,253,146,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .back-link {
+            position: fixed;
+            top: 100px;
+            left: 40px;
+            color: var(--brand-main);
+            text-decoration: none;
+            z-index: 100;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        .back-link:hover {
+            background: var(--brand-main);
+            color: black;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 100px;
+            color: var(--brand-main);
+        }
+    </style>
 </head>
 <body>
-    <h1>Лабораторная работа №7</h1>
-    <h2>Обработка видео файлов</h2>
+    <div class="hero-bg">
+        <div class="stars"></div>
+    </div>
+
+    <a href="./index.html" class="back-link">← На главную</a>
+
+    <h1>📹 Исходные AVI видео</h1>
     
-    <ul>
-        <li><a href="original.html">Исходные видео (AVI)</a></li>
-        <li><a href="processed.html">Обработанные видео (MP4)</a></li>
-        <li><a href="comparison.html">Сравнение FFmpeg и HandBrake</a></li>
-        <li><a href="process_video.log">Лог обработки</a></li>
-    </ul>
-    
-    <hr>
-    <p>Методы конвертации: FFmpeg и HandBrakeCLI</p>
-    <p>Аудио: моно (AAC)</p>
-    <p>Архив исходников: /var/www/html/arhiv/video/</p>
-</body>
-</html>
+    <div class="video-grid">
 EOF
 
-# === СТРАНИЦА С ИСХОДНЫМИ ВИДЕО ===
-cat <<EOF | sudo tee $BASE_DIR/original.html
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Исходные видео (AVI)</title>
-</head>
-<body>
-    <h1>Исходные AVI файлы</h1>
-    <p><a href="index.html">На главную</a></p>
-    <hr>
-EOF
-
+# Добавляем видео на страницу
 for video in $IN_DIR/*.avi; do
     if [ -f "$video" ]; then
         filename=$(basename "$video")
         size=$(stat -c%s "$video")
         size_mb=$(awk "BEGIN {printf \"%.2f\", $size/1048576}")
         cat <<EOF | sudo tee -a $BASE_DIR/original.html
-    <div>
-        <p><strong>$filename</strong> (${size_mb} MB)</p>
-        <video width="400" controls>
-            <source src="video_in/$filename" type="video/x-msvideo">
-            Ваш браузер не поддерживает видео.
-        </video>
-        <hr>
-    </div>
+        <div class="video-card">
+            <video controls>
+                <source src="video_in/$filename" type="video/x-msvideo">
+                Ваш браузер не поддерживает видео.
+            </video>
+            <h3>$filename</h3>
+            <p>Размер: ${size_mb} MB</p>
+            <div class="size-badge">Исходный файл AVI</div>
+        </div>
 EOF
     fi
 done
 
-cat <<EOF | sudo tee -a $BASE_DIR/original.html
+cat <<'EOF' | sudo tee -a $BASE_DIR/original.html
+    </div>
+
+    <script src="main.js"></script>
+    <script src="stars.js"></script>
 </body>
 </html>
 EOF
 
-# === СТРАНИЦА С ОБРАБОТАННЫМИ ВИДЕО ===
-cat <<EOF | sudo tee $BASE_DIR/processed.html
-<html>
+# === СТРАНИЦА С ОБРАБОТАННЫМИ ВИДЕО (processed.html) ===
+cat <<'EOF' | sudo tee $BASE_DIR/processed.html
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Обработанные видео (MP4)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Портфолио - Обработанные видео</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="main.css">
+    <style>
+        .method-section {
+            margin: 120px 40px 40px 40px;
+        }
+        .method-title {
+            color: var(--brand-main);
+            font-size: 32px;
+            margin-bottom: 30px;
+            padding-left: 20px;
+            border-left: 4px solid var(--brand-main);
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        .video-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.1);
+        }
+        .video-card video {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .video-card h3 {
+            color: var(--brand-main);
+            margin-bottom: 10px;
+            font-size: 16px;
+            word-break: break-all;
+        }
+        .video-card p {
+            color: var(--text-gray);
+            font-size: 14px;
+        }
+        .method-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .ffmpeg-badge {
+            background: rgba(255,107,107,0.3);
+            color: #ff6b6b;
+        }
+        .handbrake-badge {
+            background: rgba(78,205,196,0.3);
+            color: #4ecdc4;
+        }
+        .back-link {
+            position: fixed;
+            top: 100px;
+            left: 40px;
+            color: var(--brand-main);
+            text-decoration: none;
+            z-index: 100;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        .back-link:hover {
+            background: var(--brand-main);
+            color: black;
+        }
+    </style>
 </head>
 <body>
-    <h1>Обработанные видео файлы</h1>
-    <p><a href="index.html">На главную</a></p>
-    <hr>
-    <h2>Конвертация через FFmpeg</h2>
+    <div class="hero-bg">
+        <div class="stars"></div>
+    </div>
+
+    <a href="./index.html" class="back-link">← На главную</a>
+
+    <div class="method-section">
+        <div class="method-title">🎬 FFmpeg</div>
+        <div class="video-grid">
 EOF
 
 # Видео через FFmpeg
@@ -253,20 +392,26 @@ for video in $OUT_DIR/*_ffmpeg.mp4; do
         size=$(stat -c%s "$video")
         size_mb=$(awk "BEGIN {printf \"%.2f\", $size/1048576}")
         cat <<EOF | sudo tee -a $BASE_DIR/processed.html
-    <div>
-        <p><strong>$filename</strong> (${size_mb} MB) - FFmpeg</p>
-        <video width="400" controls>
-            <source src="video/$filename" type="video/mp4">
-            Ваш браузер не поддерживает видео.
-        </video>
-        <hr>
-    </div>
+            <div class="video-card">
+                <video controls>
+                    <source src="video/$filename" type="video/mp4">
+                    Ваш браузер не поддерживает видео.
+                </video>
+                <h3>$filename</h3>
+                <p>Размер: ${size_mb} MB</p>
+                <div class="method-badge ffmpeg-badge">FFmpeg | Аудио: моно</div>
+            </div>
 EOF
     fi
 done
 
-cat <<EOF | sudo tee -a $BASE_DIR/processed.html
-    <h2>Конвертация через HandBrake</h2>
+cat <<'EOF' | sudo tee -a $BASE_DIR/processed.html
+        </div>
+    </div>
+
+    <div class="method-section">
+        <div class="method-title">🎨 HandBrake</div>
+        <div class="video-grid">
 EOF
 
 # Видео через HandBrake
@@ -276,65 +421,223 @@ for video in $OUT_DIR/*_handbrake.mp4; do
         size=$(stat -c%s "$video")
         size_mb=$(awk "BEGIN {printf \"%.2f\", $size/1048576}")
         cat <<EOF | sudo tee -a $BASE_DIR/processed.html
-    <div>
-        <p><strong>$filename</strong> (${size_mb} MB) - HandBrake</p>
-        <video width="400" controls>
-            <source src="video/$filename" type="video/mp4">
-            Ваш браузер не поддерживает видео.
-        </video>
-        <hr>
-    </div>
+            <div class="video-card">
+                <video controls>
+                    <source src="video/$filename" type="video/mp4">
+                    Ваш браузер не поддерживает видео.
+                </video>
+                <h3>$filename</h3>
+                <p>Размер: ${size_mb} MB</p>
+                <div class="method-badge handbrake-badge">HandBrake | Аудио: моно</div>
+            </div>
 EOF
     fi
 done
 
-cat <<EOF | sudo tee -a $BASE_DIR/processed.html
+cat <<'EOF' | sudo tee -a $BASE_DIR/processed.html
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="stars.js"></script>
 </body>
 </html>
 EOF
 
-# === СТРАНИЦА СРАВНЕНИЯ ===
-cat <<EOF | sudo tee $BASE_DIR/comparison.html
-<html>
+# === СТРАНИЦА СРАВНЕНИЯ (comparison.html) ===
+cat <<'EOF' | sudo tee $BASE_DIR/comparison.html
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Сравнение FFmpeg и HandBrake</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Портфолио - Сравнение методов</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="main.css">
+    <style>
+        .comparison-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 40px;
+            padding: 120px 40px 40px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .method-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+        .method-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.08);
+        }
+        .method-card h2 {
+            color: var(--brand-main);
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .method-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .method-card li {
+            padding: 10px 0;
+            color: var(--text-gray);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .advantage {
+            color: #4ecdc4;
+        }
+        .disadvantage {
+            color: #ff6b6b;
+        }
+        .stats-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .stats-box p {
+            margin: 10px 0;
+        }
+        .back-link {
+            position: fixed;
+            top: 100px;
+            left: 40px;
+            color: var(--brand-main);
+            text-decoration: none;
+            z-index: 100;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        .back-link:hover {
+            background: var(--brand-main);
+            color: black;
+        }
+        .recommendation {
+            max-width: 900px;
+            margin: 40px auto;
+            background: rgba(255,253,146,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+        }
+        .recommendation h3 {
+            color: var(--brand-main);
+            margin-bottom: 20px;
+        }
+        .log-link {
+            text-align: center;
+            margin: 40px;
+        }
+        .log-link a {
+            color: var(--brand-main);
+            text-decoration: none;
+            background: rgba(255,255,255,0.1);
+            padding: 12px 24px;
+            border-radius: 30px;
+            transition: 0.3s;
+        }
+        .log-link a:hover {
+            background: var(--brand-main);
+            color: black;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 100px;
+            color: var(--brand-main);
+        }
+    </style>
 </head>
 <body>
-    <h1>Сравнение методов конвертации</h1>
-    <p><a href="index.html">На главную</a></p>
-    <hr>
-    
-    <h2>FFmpeg</h2>
-    <ul>
-        <li>✅ Высокая скорость обработки</li>
-        <li>✅ Гибкие настройки</li>
-        <li>✅ Меньше потребление ресурсов</li>
-        <li>❌ Чуть хуже сжатие на низких битрейтах</li>
-    </ul>
-    
-    <h2>HandBrake</h2>
-    <ul>
-        <li>✅ Отличное качество сжатия</li>
-        <li>✅ Удобные готовые пресеты</li>
-        <li>✅ Есть графический интерфейс</li>
-        <li>❌ Медленнее FFmpeg в 1.5-2 раза</li>
-    </ul>
-    
-    <hr>
-    <h3>Рекомендации:</h3>
-    <p><strong>Для быстрой обработки:</strong> используйте FFmpeg</p>
-    <p><strong>Для максимального качества:</strong> используйте HandBrake</p>
-    <p><strong>Аудио:</strong> оба метода конвертируют звук в моно (AAC)</p>
-    <p><strong>Формат:</strong> MP4 (H.264) - универсальный формат для веба</p>
-    
-    <hr>
-    <p><a href="process_video.log">Посмотреть полный лог обработки</a></p>
+    <div class="hero-bg">
+        <div class="stars"></div>
+    </div>
+
+    <a href="./index.html" class="back-link">← На главную</a>
+
+    <h1>📊 Сравнение методов конвертации</h1>
+
+    <div class="comparison-container">
+        <div class="method-card">
+            <h2>⚡ FFmpeg</h2>
+            <ul>
+                <li class="advantage">✅ Высокая скорость обработки</li>
+                <li class="advantage">✅ Гибкие настройки кодека</li>
+                <li class="advantage">✅ Меньше потребление ресурсов</li>
+                <li class="advantage">✅ Отлично для пакетной обработки</li>
+                <li class="disadvantage">❌ Чуть хуже сжатие на низких битрейтах</li>
+                <li class="disadvantage">❌ Сложнее для новичков</li>
+            </ul>
+            <div class="stats-box">
+                <p>🎯 Лучшее применение:</p>
+                <p>Быстрая обработка большого количества видео</p>
+            </div>
+        </div>
+
+        <div class="method-card">
+            <h2>🎨 HandBrake</h2>
+            <ul>
+                <li class="advantage">✅ Отличное качество сжатия</li>
+                <li class="advantage">✅ Удобные готовые пресеты</li>
+                <li class="advantage">✅ Лучшая работа с анимацией</li>
+                <li class="advantage">✅ Есть графический интерфейс</li>
+                <li class="disadvantage">❌ Медленнее FFmpeg в 1.5-2 раза</li>
+                <li class="disadvantage">❌ Больше потребляет CPU</li>
+            </ul>
+            <div class="stats-box">
+                <p>🎯 Лучшее применение:</p>
+                <p>Максимальное качество при минимальном размере</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="recommendation">
+        <h3>💡 Рекомендации</h3>
+        <p><strong>Для быстрой обработки:</strong> используйте FFmpeg</p>
+        <p><strong>Для максимального качества:</strong> используйте HandBrake</p>
+        <p><strong>Аудио:</strong> оба метода конвертируют звук в моно (AAC) для уменьшения размера</p>
+        <p><strong>Формат:</strong> MP4 (H.264) - универсальный формат для веба</p>
+    </div>
+
+    <div class="log-link">
+        <a href="process_video.log" target="_blank">📄 Посмотреть полный лог обработки</a>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="stars.js"></script>
 </body>
 </html>
 EOF
 
-# === НАСТРОЙКА ПРАВ ДОСТУПА ===
+# === ДОБАВЛЯЕМ ССЫЛКИ В ХЕДЕР НА ГЛАВНОЙ СТРАНИЦЕ (ЕСЛИ НУЖНО) ===
+# Проверяем, есть ли уже ссылки на видео в хедере
+if ! grep -q "video_in" "$BASE_DIR/index.html"; then
+    # Добавляем ссылки в хедер, если их нет
+    sudo sed -i '/<div class="a_box">/a\
+            <div class="a_box">\
+                <a href="./original.html">Исходные видео</a>\
+                <div class="a_box_line"></div>\
+            </div>\
+\
+            <div class="a_box">\
+                <a href="./processed.html">Обработанные</a>\
+                <div class="a_box_line"></div>\
+            </div>\
+\
+            <div class="a_box">\
+                <a href="./comparison.html">Сравнение</a>\
+                <div class="a_box_line"></div>\
+            </div>' "$BASE_DIR/index.html" 2>/dev/null || true
+fi
+
 sudo chown -R www-data:www-data $BASE_DIR
 sudo chmod -R 755 $BASE_DIR
 
@@ -348,4 +651,4 @@ echo "" | tee -a "$LOG_FILE"
 echo "=== ИТОГОВЫЙ ОТЧЁТ ===" | tee -a "$LOG_FILE"
 echo "Обработано файлов: $count" | tee -a "$LOG_FILE"
 echo "Методы: FFmpeg и HandBrakeCLI" | tee -a "$LOG_FILE"
-echo "Результаты: /var/www/html/video/" | tee -a "$LOG_FILE"
+echo "Результаты: $OUT_DIR" | tee -a "$LOG_FILE"
